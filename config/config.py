@@ -41,16 +41,22 @@ class Config:
             raise MissingName(name)
         return value
 
-    def _cast(self, name: str, value: typing.Any, cast: CastType,) -> typing.Any:
+    def _cast(
+        self, name: str, value: typing.Any, cast: CastType,
+    ) -> typing.Any:
         try:
             return cast(value)
         except (TypeError, ValueError) as err:
             raise InvalidCast(
-                f"Config '{name}' has value '{value}'. Not a valid {cast.__name__}."
+                f"Config '{name}' has value '{value}'."
+                f' Not a valid {cast.__name__}.'
             ) from err
 
     def get(
-        self, name: str, cast: AnyCallable | None = None, default: typing.Any = MISSING,
+        self,
+        name: str,
+        cast: AnyCallable | None = None,
+        default: typing.Any = MISSING,
     ) -> typing.Any:
         value = self._get_value(name, default)
         if cast is None:
@@ -59,7 +65,10 @@ class Config:
 
     @typing.overload
     def __call__(
-        self, name: str, cast: typing.Callable[[str], T], default: typing.Any = MISSING,
+        self,
+        name: str,
+        cast: typing.Callable[[str], T],
+        default: typing.Any = MISSING,
     ) -> T:
         ...
 
@@ -70,7 +79,10 @@ class Config:
         ...
 
     def __call__(
-        self, name: str, cast: AnyCallable | None = None, default: typing.Any = MISSING,
+        self,
+        name: str,
+        cast: AnyCallable | None = None,
+        default: typing.Any = MISSING,
     ) -> typing.Any:
         return self.get(name, cast, default)
 
@@ -85,12 +97,17 @@ class CachedConfig(Config):
         self._cached: dict[str, typing.Any] = {}
 
     def get(
-        self, name: str, cast: AnyCallable | None = None, default: typing.Any = MISSING,
+        self,
+        name: str,
+        cast: AnyCallable | None = None,
+        default: typing.Any = MISSING,
     ) -> typing.Any:
         try:
             return self._cached[name]
         except KeyError:
-            return self._cached.setdefault(name, super().get(name, cast, default))
+            return self._cached.setdefault(
+                name, super().get(name, cast, default)
+            )
 
 
 lower_environ = LowerEnvMapping(environ)
@@ -107,6 +124,9 @@ class CIConfig(Config):
         super().__init__(env_file, mapping)
 
     def get(
-        self, name: str, cast: AnyCallable | None = None, default: typing.Any = MISSING
+        self,
+        name: str,
+        cast: AnyCallable | None = None,
+        default: typing.Any = MISSING,
     ) -> typing.Any:
         return super().get(name.lower(), cast, default)

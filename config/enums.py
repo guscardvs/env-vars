@@ -6,3 +6,8 @@ class Env(Enum):
     DEV = 'dev'
     TEST = 'test'
     PRD = 'prd'
+
+    @classmethod
+    def iter(cls):
+        for item in cls:
+            yield item.value

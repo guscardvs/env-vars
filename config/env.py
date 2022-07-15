@@ -24,7 +24,8 @@ class EnvMapping(typing.MutableMapping):
     def __delitem__(self, key: typing.Any) -> None:
         if key in self._has_been_read:
             raise AlreadySet(
-                f"Cannot delete environ['{key}'], value has already " 'been read.'
+                f"Cannot delete environ['{key}'], value has already "
+                'been read.'
             )
         self._environ.__delitem__(key)
 
