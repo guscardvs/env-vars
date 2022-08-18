@@ -59,9 +59,7 @@ class Config:
         default: typing.Any = MISSING,
     ) -> typing.Any:
         value = self._get_value(name, default)
-        if cast is None:
-            return value
-        return self._cast(name, value, cast)
+        return value if cast is None else self._cast(name, value, cast)
 
     @typing.overload
     def __call__(

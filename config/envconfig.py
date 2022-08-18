@@ -3,7 +3,7 @@ import typing
 
 from config.exceptions import InvalidCast, MissingName
 
-from .config import Config
+from .config import MISSING, Config
 from .enums import Env
 
 StrOrPath = str | pathlib.Path
@@ -37,10 +37,10 @@ class EnvConfig(Config):
     def env(self) -> Env:
         return self._env
 
-    def _get_value(self, name: str, default: typing.Any) -> str:
-        value = self._mapping.get(name, None)
-        if self._consider_file_on_env is self.env and value is None:
+    def _get_value(self, name: str, default: str) -> str:
+        value = self._mapping.get(name, MISSING)
+        if self._consider_file_on_env is self.env and value is MISSING:
             value = self._file_vals.get(name, default)
-        if value is None:
+        if value is MISSING:
             raise MissingName(name)
-        return value
+        return typing.cast(str, value)
