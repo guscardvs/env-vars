@@ -6,3 +6,6 @@ format:
 lint:
 	@flake8 config
 	@mypy config
+
+test:
+	@pytest tests
