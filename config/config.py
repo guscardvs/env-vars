@@ -5,7 +5,11 @@ import typing
 from .env import EnvMapping, LowerEnvMapping
 from .exceptions import InvalidCast, MissingName
 
-MISSING = object()
+
+class MISSING:
+    pass
+
+
 StrOrPath = str | pathlib.Path
 AnyCallable = typing.Callable[[str], typing.Any]
 CastType = type | AnyCallable
