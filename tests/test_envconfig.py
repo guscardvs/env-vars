@@ -3,9 +3,9 @@ from pathlib import Path
 import pytest
 
 from config.enums import Env
-from config.env import EnvMapping
 from config.envconfig import EnvConfig
 from config.exceptions import InvalidCast, MissingName
+from config.mapping import EnvMapping
 
 PARENT_DIR = curpath = Path(__file__).resolve().parent
 

@@ -2,8 +2,8 @@ import os
 import pathlib
 import typing
 
-from .env import EnvMapping, LowerEnvMapping
 from .exceptions import InvalidCast, MissingName
+from .mapping import EnvMapping, LowerEnvMapping
 
 
 class MISSING:
