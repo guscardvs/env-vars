@@ -22,3 +22,6 @@ __all__ = [
     'enums',
     'helpers',
 ]
+
+
+__version__ = '1.7.0'
