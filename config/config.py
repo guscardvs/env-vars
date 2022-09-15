@@ -10,9 +10,9 @@ class MISSING:
     pass
 
 
-StrOrPath = str | pathlib.Path
+StrOrPath = typing.Union[str, pathlib.Path]
 AnyCallable = typing.Callable[[str], typing.Any]
-CastType = type | AnyCallable
+CastType = typing.Union[type, AnyCallable]
 T = typing.TypeVar('T')
 
 environ = EnvMapping()
@@ -21,7 +21,7 @@ environ = EnvMapping()
 class Config:
     def __init__(
         self,
-        env_file: StrOrPath | None = None,
+        env_file: typing.Optional[StrOrPath] = None,
         mapping: typing.Mapping[str, str] = environ,
     ) -> None:
         self._mapping = mapping
@@ -59,7 +59,7 @@ class Config:
     def get(
         self,
         name: str,
-        cast: AnyCallable | None = None,
+        cast: typing.Optional[AnyCallable] = None,
         default: typing.Any = MISSING,
     ) -> typing.Any:
         value = self._get_value(name, default)
@@ -83,7 +83,7 @@ class Config:
     def __call__(
         self,
         name: str,
-        cast: AnyCallable | None = None,
+        cast: typing.Optional[AnyCallable] = None,
         default: typing.Any = MISSING,
     ) -> typing.Any:
         return self.get(name, cast, default)
@@ -101,7 +101,7 @@ class CachedConfig(Config):
     def get(
         self,
         name: str,
-        cast: AnyCallable | None = None,
+        cast: typing.Optional[AnyCallable] = None,
         default: typing.Any = MISSING,
     ) -> typing.Any:
         try:
@@ -120,7 +120,7 @@ class CIConfig(Config):
 
     def __init__(
         self,
-        env_file: StrOrPath | None = None,
+        env_file: typing.Optional[StrOrPath] = None,
         mapping: typing.Mapping[str, str] = lower_environ,
     ) -> None:
         super().__init__(env_file, mapping)
@@ -128,7 +128,7 @@ class CIConfig(Config):
     def get(
         self,
         name: str,
-        cast: AnyCallable | None = None,
+        cast: typing.Optional[AnyCallable] = None,
         default: typing.Any = MISSING,
     ) -> typing.Any:
         return super().get(name.lower(), cast, default)

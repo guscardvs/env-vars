@@ -22,9 +22,9 @@ def comma_separated(
 
 
 def comma_separated(
-    cast: Callable[[str], T | str] = as_callable(str)
-) -> typing.Callable[[str], tuple[T | str, ...]]:
-    def _wrapped(val: str) -> tuple[T | str, ...]:
+    cast: Callable[[str], typing.Union[T, str]] = as_callable(str)
+) -> typing.Callable[[str], tuple[typing.Union[T, str], ...]]:
+    def _wrapped(val: str) -> tuple[typing.Union[T, str], ...]:
         lex = shlex(val, posix=True)
         lex.whitespace = ','
         lex.whitespace_split = True
@@ -41,7 +41,7 @@ _boolean_vals = {
 }
 
 
-def boolean(val: str | None) -> bool:
+def boolean(val: typing.Optional[str]) -> bool:
     if not val:
         return False
     try:

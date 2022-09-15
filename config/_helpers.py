@@ -1,8 +1,10 @@
 import typing
 from functools import cache
 
+import typing_extensions
+
 T = typing.TypeVar('T')
-P = typing.ParamSpec('P', bound=typing.Hashable)  # type: ignore
+P = typing_extensions.ParamSpec('P', bound=typing.Hashable)  # type: ignore
 
 
 def memoize(func: typing.Callable[P, T]) -> typing.Callable[P, T]:

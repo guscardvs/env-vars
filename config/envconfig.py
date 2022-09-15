@@ -8,7 +8,7 @@ from config.exceptions import MissingName
 from .config import MISSING, AnyCallable, Config, T
 from .enums import Env
 
-StrOrPath = str | pathlib.Path
+StrOrPath = typing.Union[str, pathlib.Path]
 # Validator receives an EnvConfig instance and the env_name currently checking
 Validator = typing.Callable[['Config'], typing.Callable[[str], bool]]
 
@@ -19,8 +19,8 @@ class OptionalConfig(Config):
     def __init__(
         self,
         required_if: Validator,
-        env_file: StrOrPath | None,
-        mapping: typing.Mapping[str, str] | None = None,
+        env_file: typing.Optional[StrOrPath],
+        mapping: typing.Optional[typing.Mapping[str, str]] = None,
         ignore_default: bool = True,
     ) -> None:
         super().__init__(env_file)
@@ -36,12 +36,12 @@ class OptionalConfig(Config):
         self,
         name: str,
         default: typing.Any,
-        ignore_default: bool | None = None,
+        ignore_default: typing.Optional[bool] = None,
     ) -> str:
         ignore_default = (
             self._ignore_default if ignore_default is None else ignore_default
         )
-        value: str | object = self._mapping.get(name, default)
+        value: typing.Union[str, object] = self._mapping.get(name, default)
         if self.validate(name) and value is MISSING:
             value = self._file_vals.get(name, MISSING)
         if value is MISSING and ignore_default:
@@ -51,9 +51,9 @@ class OptionalConfig(Config):
     def get(
         self,
         name: str,
-        cast: AnyCallable | None = None,
+        cast: typing.Optional[AnyCallable] = None,
         default: typing.Any = MISSING,
-        ignore_default: bool | None = None,
+        ignore_default: typing.Optional[bool] = None,
     ) -> typing.Any:
         value = self._get_value(name, default, ignore_default)
         return value if cast is None else self._cast(name, value, cast)
@@ -64,7 +64,7 @@ class OptionalConfig(Config):
         name: str,
         cast: typing.Callable[[str], T],
         default: typing.Any = MISSING,
-        ignore_default: bool | None = None,
+        ignore_default: typing.Optional[bool] = None,
     ) -> T:
         ...
 
@@ -74,16 +74,16 @@ class OptionalConfig(Config):
         name: str,
         cast: None = None,
         default: typing.Any = MISSING,
-        ignore_default: bool | None = None,
+        ignore_default: typing.Optional[bool] = None,
     ) -> str:
         ...
 
     def __call__(
         self,
         name: str,
-        cast: AnyCallable | None = None,
+        cast: typing.Optional[AnyCallable] = None,
         default: typing.Any = MISSING,
-        ignore_default: bool | None = None,
+        ignore_default: typing.Optional[bool] = None,
     ) -> typing.Any:
         return self.get(name, cast, default, ignore_default)
 
@@ -119,7 +119,7 @@ class EnvConfig(OptionalConfig):
         self,
         by_relevancy: ByRelevancy = ByRelevancy(),
         env_file: StrOrPath = '.env',
-        mapping: typing.Mapping[str, str] | None = None,
+        mapping: typing.Optional[typing.Mapping[str, str]] = None,
         ignore_default: bool = True,
     ) -> None:
         self._by_relevancy = by_relevancy
