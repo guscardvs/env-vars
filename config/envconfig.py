@@ -44,7 +44,7 @@ class OptionalConfig(Config):
         value: typing.Union[str, object] = self._mapping.get(name, MISSING)
         if self.validate(name) and value is MISSING:
             value = self._file_vals.get(name, MISSING)
-        if not ignore_default:
+        if not ignore_default and value is MISSING:
             value = default
         if value is MISSING:
             raise MissingName(name)
