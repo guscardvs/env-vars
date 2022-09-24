@@ -41,10 +41,12 @@ class OptionalConfig(Config):
         ignore_default = (
             self._ignore_default if ignore_default is None else ignore_default
         )
-        value: typing.Union[str, object] = self._mapping.get(name, default)
+        value: typing.Union[str, object] = self._mapping.get(name, MISSING)
         if self.validate(name) and value is MISSING:
             value = self._file_vals.get(name, MISSING)
-        if value is MISSING and ignore_default:
+        if not ignore_default:
+            value = default
+        if value is MISSING:
             raise MissingName(name)
         return typing.cast(str, value)
 
