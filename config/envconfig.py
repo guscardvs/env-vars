@@ -5,7 +5,10 @@ from dataclasses import dataclass
 from config import _helpers
 from config.exceptions import MissingName
 
-from .config import MISSING, AnyCallable, Config, T
+from .config import MISSING
+from .config import AnyCallable
+from .config import Config
+from .config import T
 from .enums import Env
 
 StrOrPath = typing.Union[str, pathlib.Path]

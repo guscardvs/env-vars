@@ -4,7 +4,8 @@ import pytest
 
 from config.enums import Env
 from config.envconfig import EnvConfig
-from config.exceptions import InvalidCast, MissingName
+from config.exceptions import InvalidCast
+from config.exceptions import MissingName
 from config.mapping import EnvMapping
 
 PARENT_DIR = curpath = Path(__file__).resolve().parent
