@@ -1,136 +1,128 @@
 import os
-import pathlib
-import typing
+from os import environ
+from pathlib import Path
+from typing import (
+    Any,
+    Callable,
+    Iterator,
+    MutableMapping,
+    TypeVar,
+    Union,
+    overload,
+)
 
-from .exceptions import InvalidCast
-from .exceptions import MissingName
-from .mapping import EnvMapping
-from .mapping import LowerEnvMapping
+from gyver.attrs import define, info
+
+from config._helpers import clean_dotenv_value, lazyfield, panic
+from config.exceptions import InvalidCast, MissingName
+from config.interface import MISSING, _default_cast
+
+T = TypeVar("T")
 
 
-class MISSING:
-    pass
+@define
+class EnvMapping(MutableMapping[str, str]):
+    mapping: MutableMapping[str, str] = environ
+    already_read: set[str] = info(default_factory=set)
+
+    def __getitem__(self, name: str):
+        val = self.mapping[name]
+        self.already_read.add(name)
+        return val
+
+    def __setitem__(self, name: str, value: str):
+        if name in self.already_read:
+            raise panic(
+                KeyError, f"{name} already read, cannot change its value"
+            )
+        self.mapping[name] = value
+
+    def __delitem__(self, name: str) -> None:
+        if name in self.already_read:
+            raise panic(KeyError, f"{name} already read, cannot delete")
+        del self.mapping[name]
+
+    def __iter__(self) -> Iterator[str]:
+        yield from self.mapping
+
+    def __len__(self) -> int:
+        return len(self.mapping)
 
 
-StrOrPath = typing.Union[str, pathlib.Path]
-AnyCallable = typing.Callable[[str], typing.Any]
-CastType = typing.Union[type, AnyCallable]
-T = typing.TypeVar('T')
-
-environ = EnvMapping()
+default_mapping = EnvMapping()
 
 
+@define
 class Config:
-    def __init__(
-        self,
-        env_file: typing.Optional[StrOrPath] = None,
-        mapping: typing.Mapping[str, str] = environ,
-    ) -> None:
-        self._mapping = mapping
-        self._file_vals: typing.Dict[str, str] = {}
-        if env_file is not None and os.path.isfile(env_file):
-            self._file_vals = self._load_file(env_file)
+    env_file: Union[str, Path, None] = None
+    mapping: EnvMapping = default_mapping
 
-    def _load_file(self, env_file: StrOrPath) -> typing.Dict[str, str]:
-        output = {}
-        with open(env_file) as stream:
-            for line in stream:
-                if line.startswith('#') or '=' not in line:
+    def __post_init__(self):
+        if self.env_file and os.path.isfile(self.env_file):
+            self.file_values.update(dict(self._read_file(self.env_file)))
+
+    @lazyfield
+    def file_values(self):
+        return {}
+
+    def _read_file(self, env_file: Union[str, Path]):
+        with open(env_file, "r") as buf:
+            for line in buf:
+                if line.startswith("#"):
                     continue
-                name, value = line.split('=', 1)
-                output[name.strip()] = value.strip()
-        return output
+                name, value = line.split("=", 1)
+                yield name.strip(), clean_dotenv_value(value)
 
-    def _get_value(self, name: str, default: typing.Any) -> str:
-        value = self._mapping.get(name, self._file_vals.get(name, default))
-        if value is MISSING:
-            raise MissingName(name)
-        return value
-
-    def _cast(
-        self, name: str, value: typing.Any, cast: CastType,
-    ) -> typing.Any:
+    def _cast(self, name: str, val: Any, cast: Callable) -> Any:
         try:
-            return cast(value)
-        except (TypeError, ValueError) as err:
-            raise InvalidCast(
-                f"Config '{name}' has value '{value}'."
-                f' Not a valid {cast.__name__}.'
-            ) from err
+            val = cast(val)
+        except Exception as e:
+            raise panic(
+                InvalidCast, f"{name} received an invalid value {val}"
+            ) from e
+        else:
+            return val
+
+    def _get_val(
+        self, name: str, default: Union[Any, type[MISSING]] = MISSING
+    ) -> Union[Any, type[MISSING]]:
+        return self.mapping.get(name, self.file_values.get(name, default))
 
     def get(
         self,
         name: str,
-        cast: typing.Optional[AnyCallable] = None,
-        default: typing.Any = MISSING,
-    ) -> typing.Any:
-        value = self._get_value(name, default)
-        return value if cast is None else self._cast(name, value, cast)
+        cast: Callable = _default_cast,
+        default: Union[Any, type[MISSING]] = MISSING,
+    ) -> Any:
+        val = self._get_val(name, default)
+        if val is MISSING:
+            raise panic(
+                MissingName, f"{name} not found and no default was given"
+            )
+        return self._cast(name, val, cast)
 
-    @typing.overload
+    @overload
     def __call__(
         self,
         name: str,
-        cast: typing.Callable[[str], T],
-        default: typing.Any = MISSING,
+        cast: Union[Callable[[Any], T], type[T]] = _default_cast,
+        default: type[MISSING] = MISSING,
     ) -> T:
         ...
 
-    @typing.overload
+    @overload
     def __call__(
-        self, name: str, cast: None = None, default: typing.Any = MISSING,
-    ) -> str:
+        self,
+        name: str,
+        cast: Union[Callable[[Any], T], type[T]] = _default_cast,
+        default: T = ...,
+    ) -> T:
         ...
 
     def __call__(
         self,
         name: str,
-        cast: typing.Optional[AnyCallable] = None,
-        default: typing.Any = MISSING,
-    ) -> typing.Any:
+        cast: Union[Callable[[Any], T], type[T]] = _default_cast,
+        default: Union[T, type[MISSING]] = MISSING,
+    ) -> T:
         return self.get(name, cast, default)
-
-
-class CachedConfig(Config):
-    def __init__(
-        self,
-        env_file: typing.Optional[StrOrPath] = None,
-        mapping: typing.Mapping[str, str] = environ,
-    ) -> None:
-        super().__init__(env_file, mapping)
-        self._cached: dict[str, typing.Any] = {}
-
-    def get(
-        self,
-        name: str,
-        cast: typing.Optional[AnyCallable] = None,
-        default: typing.Any = MISSING,
-    ) -> typing.Any:
-        try:
-            return self._cached[name]
-        except KeyError:
-            return self._cached.setdefault(
-                name, super().get(name, cast, default)
-            )
-
-
-lower_environ = LowerEnvMapping(environ)
-
-
-class CIConfig(Config):
-    """Case Insensitive Config"""
-
-    def __init__(
-        self,
-        env_file: typing.Optional[StrOrPath] = None,
-        mapping: typing.Mapping[str, str] = lower_environ,
-    ) -> None:
-        super().__init__(env_file, mapping)
-
-    def get(
-        self,
-        name: str,
-        cast: typing.Optional[AnyCallable] = None,
-        default: typing.Any = MISSING,
-    ) -> typing.Any:
-        return super().get(name.lower(), cast, default)

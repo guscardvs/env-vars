@@ -1,15 +1,18 @@
 class ConfigError(Exception):
-    """Base Exception for all errors in package"""
+    """Base Exception for all env-star errors."""
 
 
-class AlreadySet(ConfigError):
-    pass
+class InvalidCast(ConfigError):
+    """Exception raised for config when cast callable raises an error."""
 
 
 class MissingName(ConfigError, KeyError):
-    def __init__(self, name: str) -> None:
-        super().__init__(f"Config '{name}' is missing, and has no default.")
+    """Exception raised for config when name is not found in given environ."""
 
 
-class InvalidCast(ConfigError, ValueError):
-    pass
+class AlreadySet(ConfigError):
+    """Exception raised for config when a value is already set."""
+
+
+class StrictCast(InvalidCast):
+    """Exception raised when strict is used for cast."""

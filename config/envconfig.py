@@ -1,137 +1,92 @@
-import pathlib
-import typing
-from dataclasses import dataclass
+import os
+from pathlib import Path
+from typing import Any, Callable, Sequence, Union
 
-from config import _helpers
-from config.exceptions import MissingName
+from gyver.attrs import call_init, define, info
 
-from .config import MISSING
-from .config import AnyCallable
-from .config import Config
-from .config import T
-from .enums import Env
-
-StrOrPath = typing.Union[str, pathlib.Path]
-# Validator receives an EnvConfig instance and the env_name currently checking
-Validator = typing.Callable[['Config'], typing.Callable[[str], bool]]
-
-# Using tuples with integers to prevent bugs with sorting
+from config._helpers import lazyfield
+from config.config import Config, EnvMapping, default_mapping
+from config.enums import Env
+from config.interface import MISSING
 
 
-class OptionalConfig(Config):
+@define
+class DotFile:
+    filename: Union[str, Path] = info(order=False)
+    env: Env = info(order=lambda env: env.weight)
+    apply_to_lower: bool = info(default=False, order=False)
+
+    def is_higher(self, env: Env) -> bool:
+        return self.env.weight >= env.weight
+
+
+def default_rule(_: Env):
+    return False
+
+
+@define
+class EnvConfig(Config):
+    mapping: EnvMapping = default_mapping
+    env_var: str = "CONFIG_ENV"
+    dotfiles: Sequence[DotFile] = ()
+    ignore_default_rule: Callable[[Env], bool] = default_rule
+
     def __init__(
         self,
-        required_if: Validator,
-        env_file: typing.Optional[StrOrPath],
-        mapping: typing.Optional[typing.Mapping[str, str]] = None,
-        ignore_default: bool = True,
+        *dotfiles: DotFile,
+        env_var: str = "CONFIG_ENV",
+        mapping: EnvMapping = default_mapping,
+        ignore_default_rule: Callable[[Env], bool] = default_rule
     ) -> None:
-        super().__init__(env_file)
-        self._mapping = mapping or self._mapping
-        self._ignore_default = ignore_default
-        self._required_if = required_if(Config(mapping=self._mapping))
-
-    @_helpers.memoize
-    def validate(self, name: str):
-        return self._required_if(name)
-
-    def _get_value(
-        self,
-        name: str,
-        default: typing.Any,
-        ignore_default: typing.Optional[bool] = None,
-    ) -> str:
-        ignore_default = (
-            self._ignore_default if ignore_default is None else ignore_default
+        call_init(
+            self,
+            env_var=env_var,
+            mapping=mapping,
+            dotfiles=dotfiles,
+            ignore_default_rule=ignore_default_rule,
         )
-        value: typing.Union[str, object] = self._mapping.get(name, MISSING)
-        if self.validate(name) and value is MISSING:
-            value = self._file_vals.get(name, MISSING)
-        if not ignore_default and value is MISSING:
-            value = default
-        if value is MISSING:
-            raise MissingName(name)
-        return typing.cast(str, value)
+
+    def __post_init__(self):
+        if self.dotfile:
+            EnvConfig.file_values.manual_set(
+                self, dict(self._read_file(self.dotfile.filename))
+            )
+
+    @lazyfield
+    def env(self):
+        return Config.get(self, self.env_var, Env.new)
+
+    @lazyfield
+    def ignore_default(self):
+        return self.ignore_default_rule(self.env)
 
     def get(
         self,
         name: str,
-        cast: typing.Optional[AnyCallable] = None,
-        default: typing.Any = MISSING,
-        ignore_default: typing.Optional[bool] = None,
-    ) -> typing.Any:
-        value = self._get_value(name, default, ignore_default)
-        return value if cast is None else self._cast(name, value, cast)
+        cast: Callable[..., Any] = ...,
+        default: Union[Any, type[MISSING]] = ...,
+    ) -> Any:
+        default = MISSING if self.ignore_default else default
+        return Config.get(self, name, cast, default)
 
-    @typing.overload
-    def __call__(
-        self,
-        name: str,
-        cast: typing.Callable[[str], T],
-        default: typing.Any = MISSING,
-        ignore_default: typing.Optional[bool] = None,
-    ) -> T:
-        ...
+    @lazyfield
+    def dotfile(self):
+        """The dotfile function returns the dotfile object that is applicable
+        to the current environment.  It traverses the list of dotfiles in
+        reverse order, so that higher priority dotfiles are checked first.  If
+        no matching dotfile is found, it returns None.
 
-    @typing.overload
-    def __call__(
-        self,
-        name: str,
-        cast: None = None,
-        default: typing.Any = MISSING,
-        ignore_default: typing.Optional[bool] = None,
-    ) -> str:
-        ...
+        :return: The first dotfile that is not higher than the current
+            environment
+        """
 
-    def __call__(
-        self,
-        name: str,
-        cast: typing.Optional[AnyCallable] = None,
-        default: typing.Any = MISSING,
-        ignore_default: typing.Optional[bool] = None,
-    ) -> typing.Any:
-        return self.get(name, cast, default, ignore_default)
-
-
-ENV_RELEVANCY = {Env.TEST: 0, Env.LOCAL: 1, Env.DEV: 2, Env.PRD: 3}
-
-
-@dataclass(frozen=True)
-class ByRelevancy:
-
-    max_relevancy: Env = Env.LOCAL
-    env_name: str = 'ENV'
-
-    if typing.TYPE_CHECKING:
-
-        @property
-        def env(self) -> Env:
-            ...
-
-    def required_if(self, config: Config):
-        env = config(self.env_name, Env)
-        object.__setattr__(self, 'env', env)
-        expected = ENV_RELEVANCY[self.max_relevancy]
-
-        def validator(_: str):
-            return ENV_RELEVANCY[env] <= expected
-
-        return validator
-
-
-class EnvConfig(OptionalConfig):
-    def __init__(
-        self,
-        by_relevancy: ByRelevancy = ByRelevancy(),
-        env_file: StrOrPath = '.env',
-        mapping: typing.Optional[typing.Mapping[str, str]] = None,
-        ignore_default: bool = True,
-    ) -> None:
-        self._by_relevancy = by_relevancy
-        super().__init__(
-            by_relevancy.required_if, env_file, mapping, ignore_default
-        )
-
-    @property
-    def env(self) -> Env:
-        return self._by_relevancy.env
+        for dot in sorted(self.dotfiles, reverse=True):
+            if not dot.is_higher(self.env):
+                break
+            if dot.env != self.env and (
+                not dot.apply_to_lower or not dot.is_higher(self.env)
+            ):
+                continue
+            if not os.path.isfile(dot.filename):
+                continue
+            return dot

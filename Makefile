@@ -1,7 +1,8 @@
 .PHONY: format
 format:
-	@isort -ir config tests
+	@isort config tests
 	@black config tests
+	@docformatter --in-place `find ./config -name '*.py' -type f`
 	@autoflake --remove-all-unused-imports --remove-unused-variables --recursive --in-place config tests
 
 .PHONY: lint

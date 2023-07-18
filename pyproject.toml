@@ -1,7 +1,36 @@
 [tool.isort]
 profile = "black"
 line_length = 79
-force_single_line = true
 
 [tool.black]
 line_length = 79
+
+[tool.poetry]
+name = "env-vars"
+version = "2.0.0"
+description = ""
+authors = ["Gustavo Cardoso <self.gustavocardoso@gmail.com>"]
+readme = "README.md"
+packages = [{include = "config"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+typing-extensions = "^4.7.1"
+gyver-attrs = "^0.5.2"
+
+
+[tool.poetry.group.testing.dependencies]
+pytest = "^7.4.0"
+hypothesis = "^6.81.2"
+
+
+[tool.poetry.group.lint.dependencies]
+flake8 = "^6.0.0"
+black = "^23.7.0"
+isort = "^5.12.0"
+autoflake = "^2.2.0"
+docformatter = "^1.7.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
