@@ -13,7 +13,8 @@ class Env(EnvTuple, Enum):
     LOCAL = EnvTuple("local", 1)
     TEST = EnvTuple("test", 2)
     DEV = EnvTuple("dev", 3)
-    PRD = EnvTuple("prd", 4)
+    QA = EnvTuple("qa", 4)
+    PRD = EnvTuple("prd", 5)
 
     @property
     def value(self) -> EnvTuple:
@@ -29,4 +30,9 @@ class Env(EnvTuple, Enum):
 
     @classmethod
     def new(cls, val: str) -> Self:
-        return next(value for value in cls if value.val == val)
+        try:
+            return next(value for value in cls if value.val == val)
+        except StopIteration:
+            raise ValueError(
+                f"{val!r} is not a valid {cls.__name__}"
+            ) from None

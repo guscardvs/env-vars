@@ -1,6 +1,5 @@
 import contextlib
 import typing
-from typing import Optional
 
 from typing_extensions import ParamSpec, Self
 
@@ -120,7 +119,7 @@ class maybe_result(typing.Generic[P, T]):
 
     def __init__(
         self,
-        func: typing.Callable[P, Optional[T]],
+        func: typing.Callable[P, typing.Optional[T]],
     ):
         self._func = func
 
@@ -129,9 +128,13 @@ class maybe_result(typing.Generic[P, T]):
             return result
         raise panic(StrictCast, f"received falsy value {result}", result)
 
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> Optional[T]:
+    def __call__(
+        self, *args: P.args, **kwargs: P.kwargs
+    ) -> typing.Optional[T]:
         return self._func(*args, **kwargs)
 
-    def optional(self, *args: P.args, **kwargs: P.kwargs) -> Optional[T]:
+    def optional(
+        self, *args: P.args, **kwargs: P.kwargs
+    ) -> typing.Optional[T]:
         with contextlib.suppress(Exception):
             return self._func(*args, **kwargs)

@@ -1,9 +1,10 @@
-
+import tempfile
 import pytest
 from hypothesis import given
 from hypothesis.strategies import text
 
 import config
+from config.exceptions import MissingName
 
 
 @given(text(), text())
@@ -60,3 +61,32 @@ def test_config_cast_fails_with_invalid_cast():
 
     with pytest.raises(config.InvalidCast):
         cfg("key", _fail_cast)
+
+
+def test_env_mapping_raises_errors_correctly_on_read():
+    mapping = config.EnvMapping({})
+    mapping["my-name"] = "val"
+    mapping["my-name"]
+
+    with pytest.raises(KeyError):
+        mapping["my-name"] = "error"
+    with pytest.raises(KeyError):
+        del mapping["my-name"]
+
+
+def test_config_reads_from_env_file():
+    filename = tempfile.mktemp()
+    with open(filename, "w") as buf:
+        buf.write("HELLO=world\n")
+        buf.write("# EMAIL=error\n")
+        buf.write("TEST='123abc'\n")
+        buf.write('TESTB=" 321 "\n')
+        buf.write("TESTC=\"'123'\"\n")
+    cfg = config.Config(filename)
+    assert cfg("HELLO") == "world"
+    assert cfg("TEST") == "123abc"
+    assert cfg("TESTB") == " 321 "
+    assert cfg("TESTC") == "'123'"
+
+    with pytest.raises(MissingName):
+        cfg("EMAIL")
