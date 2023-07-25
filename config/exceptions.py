@@ -16,3 +16,6 @@ class AlreadySet(ConfigError):
 
 class StrictCast(InvalidCast):
     """Exception raised when strict is used for cast."""
+
+class InvalidEnv(ConfigError):
+    """Environment Variable did not pass rule check"""

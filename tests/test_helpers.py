@@ -1,6 +1,8 @@
+from pathlib import Path
 import pytest
 
 import config
+from config.exceptions import InvalidCast, InvalidEnv
 
 
 def test_comma_separated_returns_valid_split():
@@ -40,3 +42,75 @@ def test_boolean_raises_invalid_cast():
 
     with pytest.raises(config.InvalidCast):
         cfg("key", config.boolean_cast.strict)
+
+
+def test_valid_path_returns_path_object(tmp_path: Path):
+    filepath = tmp_path / "file.txt"
+    filepath.touch()
+    mapping = config.EnvMapping({"key": filepath.as_posix()})
+    cfg = config.Config(mapping=mapping)
+
+    val = cfg("key", config.valid_path)
+
+    assert isinstance(val, Path)
+    assert val == filepath
+
+
+def test_valid_path_raises_file_not_found_error():
+    """test valid_path raises FileNotFoundError
+    if the path does not exist."""
+    mapping = config.EnvMapping({"key": "./non_existent_file.txt"})
+    cfg = config.Config(mapping=mapping)
+    valpath = Path("./non_existent_file.txt")
+
+    with pytest.raises(InvalidCast) as exc_info:
+        cfg("key", config.valid_path)
+
+    assert isinstance(exc_info.value.__cause__, FileNotFoundError)
+    assert exc_info.value.__cause__.args == (
+        f"Path {valpath!s} is not valid path",
+        valpath,
+    )
+
+
+def test_joined_cast_composes_cast_functions():
+    mapping = config.EnvMapping({"key": "42"})
+    cfg = config.Config(mapping=mapping)
+
+    # Casting sequence: str -> int -> str -> float
+    val = cfg("key", config.joined_cast(str).cast(int).cast(str).cast(float))
+
+    assert isinstance(val, float)
+    assert val == 42.0
+
+
+def test_with_rule_valid_rule():
+    mapping = config.EnvMapping({"key": "42"})
+    cfg = config.Config(mapping=mapping)
+
+    # Rule: Value must be greater than 40
+    greater_than_40 = lambda x: int(x) > 40
+
+    # Valid rule check (value is greater than 40)
+    cfg("key", config.with_rule(greater_than_40))
+
+
+def test_with_rule_invalid_rule():
+    """test with_rule raises InvalidEnv
+    if the rule condition is not met."""
+    mapping = config.EnvMapping({"key": "42"})
+    cfg = config.Config(mapping=mapping)
+
+    # Rule: Value must be less than 40
+    less_than_40 = lambda x: int(x) < 40
+
+    # Invalid rule check (value is not less than 40)
+    with pytest.raises(InvalidCast) as exc_info:
+        cfg("key", config.with_rule(less_than_40))
+
+    assert isinstance(exc_info.value.__cause__, InvalidEnv)
+    assert exc_info.value.__cause__.args == (
+        f"Value 42 did not pass rule check {less_than_40.__name__}",
+        less_than_40,
+        "42",
+    )

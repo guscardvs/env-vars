@@ -93,7 +93,7 @@ ExcT = typing.TypeVar("ExcT", bound=Exception)
 
 
 def panic(exc: type[ExcT], message: str, *excargs) -> ExcT:
-    raise exc(f"{message.removesuffix('!')}!", *excargs)
+    return exc(f"{message.removesuffix('!')}!", *excargs)
 
 
 def clean_dotenv_value(value: str) -> str:

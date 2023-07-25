@@ -1,3 +1,4 @@
+from pathlib import Path
 import tempfile
 import pytest
 from hypothesis import given
@@ -74,19 +75,36 @@ def test_env_mapping_raises_errors_correctly_on_read():
         del mapping["my-name"]
 
 
-def test_config_reads_from_env_file():
-    filename = tempfile.mktemp()
+def test_config_reads_from_env_file(tmp_path: Path):
+    filename = tmp_path / ".envtestfile"
     with open(filename, "w") as buf:
-        buf.write("HELLO=world\n")
-        buf.write("# EMAIL=error\n")
-        buf.write("TEST='123abc'\n")
-        buf.write('TESTB=" 321 "\n')
-        buf.write("TESTC=\"'123'\"\n")
+        buf.writelines(
+            map(
+                lambda val: f"{val}\n",
+                [
+                    "HELLO=world",
+                    "# EMAIL=error",
+                    "TEST='123abc'",
+                    'TESTB=" 321 "',
+                    "TESTC=\"'123'\"",
+                    "TESTD=abc # comment",
+                    "TESTE='abc #comment'",
+                    "TESTF=abc#comment",
+                    "TESTG='abc' #\"comment\"",
+                    "TESTH='abc #comment\"",
+                ],
+            )
+        )
     cfg = config.Config(filename)
     assert cfg("HELLO") == "world"
     assert cfg("TEST") == "123abc"
     assert cfg("TESTB") == " 321 "
     assert cfg("TESTC") == "'123'"
+    assert cfg("TESTD") == "abc"
+    assert cfg("TESTE") == "abc #comment"
+    assert cfg("TESTF") == "abc#comment"
+    assert cfg("TESTG") == "abc"
+    assert cfg("TESTH") == "'abc"
 
     with pytest.raises(MissingName):
         cfg("EMAIL")

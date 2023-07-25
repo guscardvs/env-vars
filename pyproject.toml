@@ -6,12 +6,21 @@ line_length = 79
 line_length = 79
 
 [tool.poetry]
-name = "env-vars"
+name = "env-star"
 version = "2.0.0"
-description = ""
-authors = ["Gustavo Cardoso <self.gustavocardoso@gmail.com>"]
+description = "a minimalist config manager"
+authors = ["Gustavo Correa <self.gustavocardoso@gmail.com>"]
 readme = "README.md"
-packages = [{include = "config"}]
+repository = "https://github.com/gustcorrea/env-vars"
+packages = [{ include = "config" }]
+license = "MIT"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -30,6 +39,21 @@ black = "^23.7.0"
 isort = "^5.12.0"
 autoflake = "^2.2.0"
 docformatter = "^1.7.5"
+
+
+[tool.poetry.group.test.dependencies]
+pytest-cov = "^4.1.0"
+coverage = "^7.2.7"
+
+[tool.pytest.ini_options]
+addopts = [
+    "--cov=config/",
+    "--cov-report=html",
+    "--cov-config=.coveragerc",
+    "--no-cov-on-fail",
+    "--cov-fail-under=80",
+    "--nf",
+]
 
 [build-system]
 requires = ["poetry-core"]

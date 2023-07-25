@@ -14,7 +14,7 @@ from typing import (
 from gyver.attrs import define, info
 
 from config._helpers import clean_dotenv_value, lazyfield, panic
-from config.exceptions import InvalidCast, MissingName
+from config.exceptions import InvalidCast, InvalidEnv, MissingName
 from config.interface import MISSING, _default_cast
 
 T = TypeVar("T")
@@ -68,9 +68,27 @@ class Config:
     def _read_file(self, env_file: Union[str, Path]):
         with open(env_file, "r") as buf:
             for line in buf:
-                if line.startswith("#"):
+                line = (
+                    line.strip()
+                )  # Remove leading/trailing whitespaces and newlines
+                if not line or line.startswith(
+                    "#"
+                ):  # Skip empty lines and full-line comments
                     continue
+
+                # Handle lines with comments after the value
+
                 name, value = line.split("=", 1)
+                if " #" in value:
+                    value, comment = value.strip().split(" #", 1)
+                    maybe_quote = value[0]
+                    if (
+                        maybe_quote in "'\""
+                        and value[-1] != maybe_quote
+                        and comment[-1] == maybe_quote
+                    ):
+                        value = f"{value} #{comment}"
+
                 yield name.strip(), clean_dotenv_value(value)
 
     def _cast(self, name: str, val: Any, cast: Callable) -> Any:
