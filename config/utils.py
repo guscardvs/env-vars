@@ -8,14 +8,18 @@ from config.exceptions import InvalidEnv
 
 @maybe_result
 def boolean_cast(string: str):
-    """Converts a string to its boolean equivalent.
+    """
+    Converts a string to its boolean equivalent.
 
     1 and true (case-insensitive) are considered True, everything else is False.
 
-    :param string: The string to check if it represents a boolean value.
-    :type string: str
-    :return: A boolean value based on the string input.
-    :rtype: bool
+    Args:
+        string (str): The string to check if it represents a boolean value.
+
+    Returns:
+        MaybeResult[P, bool]: A maybe result helper. If called normally, it returns an Optional[bool].
+        If called with `.strict(string)`, it raises an error if `boolean_cast` returns None.
+        If called with `.optional(string)`, it returns Optional[bool], suppressing exceptions caused by None values.
     """
     return {
         "true": True,
@@ -46,12 +50,16 @@ def comma_separated(
 def comma_separated(
     cast: Callable[[str], Union[T, str]] = str
 ) -> Callable[[str], tuple[Union[T, str], ...]]:
-    """Converts a comma-separated string to a tuple of values after applying the given cast function.
+    """
+    Converts a comma-separated string to a tuple of values after applying the given cast function.
 
-    :param cast: The casting function to apply to each item in the comma-separated string. Defaults to `str`.
-    :type cast: Callable[[str], Union[T, str]], optional
-    :return: A tuple containing the casted values from the comma-separated string.
-    :rtype: tuple[Union[T, str], ...]
+    Args:
+        cast (Callable[[str], Union[T, str]]): The casting function to apply to each item in the comma-separated string.
+            Defaults to `str`.
+
+    Returns:
+        Callable[[str], tuple[Union[T, str], ...]]: A callable that returns a tuple containing the casted values
+            from the comma-separated string.
     """
 
     def _wrapped(val: str) -> tuple[Union[T, str], ...]:
@@ -67,13 +75,17 @@ T = TypeVar("T")
 
 
 def valid_path(val: str) -> Path:
-    """Converts a string to a Path object and checks if the path exists.
+    """
+    Converts a string to a Path object and checks if the path exists.
 
-    :param val: The string representing a file path.
-    :type val: str
-    :raises FileNotFoundError: If the path does not exist.
-    :return: A Path object representing the file path.
-    :rtype: Path
+    Args:
+        val (str): The string representing a file path.
+
+    Raises:
+        FileNotFoundError: If the path does not exist.
+
+    Returns:
+        Path: A Path object representing the file path.
     """
     valpath = Path(val)
     if not valpath.exists():
@@ -87,6 +99,9 @@ U = TypeVar("U")
 
 
 class _JoinedCast(Generic[S, T]):
+    """
+    A utility class for chaining casting operations.
+    """
     def __init__(self, cast: Callable[[S], T]) -> None:
         self._cast = cast
 
@@ -94,9 +109,27 @@ class _JoinedCast(Generic[S, T]):
         return self._cast(val)
 
     def cast(self, cast: Callable[[T], U]) -> "_JoinedCast[S, U]":
+        """
+        Chain a new casting operation to the existing `_JoinedCast` instance.
+
+        Args:
+            cast (Callable[[T], U]): The casting function to apply.
+
+        Returns:
+            _JoinedCast[S, U]: A new `_JoinedCast` instance that applies the chained casting operation.
+        """
         return _JoinedCast(self._make_cast(cast))
 
     def _make_cast(self, cast: Callable):
+        """
+        Create a new casting operation based on the existing `_JoinedCast` instance.
+
+        Args:
+            cast (Callable): The casting function to apply.
+
+        Returns:
+            Callable: A new casting function that combines the existing casting function and the provided one.
+        """
         def _wrapper(val: Any):
             return cast(self._cast(val))
 
@@ -104,24 +137,30 @@ class _JoinedCast(Generic[S, T]):
 
 
 def joined_cast(cast: Callable[[str], T]) -> _JoinedCast[str, T]:
-    """Creates a joined casting function for chaining casting operations.
+    """
+    Creates a joined casting function for chaining casting operations.
 
-    :param cast: The casting function to apply.
-    :type cast: Callable[[str], T]
-    :return: A `_JoinedCast` object that allows chaining casting operations.
-    :rtype: _JoinedCast[str, T]
+    Args:
+        cast (Callable[[str], T]): The casting function to apply.
+
+    Returns:
+        _JoinedCast[str, T]: A `_JoinedCast` object that allows chaining casting operations.
     """
     return _JoinedCast(cast)
 
 
 def with_rule(rule: Callable[[Any], bool]):
-    """Applies a rule check on a value, raising an `InvalidEnv` exception if the rule is not satisfied.
+    """
+    Applies a rule check on a value, raising an `InvalidEnv` exception if the rule is not satisfied.
 
-    :param rule: The rule function to apply.
-    :type rule: Callable[[Any], bool]
-    :raises InvalidEnv: If the rule condition is not met.
-    :return: A caster function that applies the rule check.
-    :rtype: Callable[[T], T]
+    Args:
+        rule (Callable[[Any], bool]): The rule function to apply.
+
+    Raises:
+        InvalidEnv: If the rule condition is not met.
+
+    Returns:
+        Callable[[T], T]: A caster function that applies the rule check.
     """
 
     def caster(val: T) -> T:

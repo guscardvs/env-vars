@@ -1,7 +1,7 @@
 from config import enums
 from config.config import MISSING, Config, EnvMapping
 from config.enums import Env
-from config.envconfig import EnvConfig
+from config.envconfig import EnvConfig, DotFile
 from config.exceptions import AlreadySet, InvalidCast, MissingName
 from config.utils import (
     boolean_cast,
@@ -19,6 +19,7 @@ __all__ = (
     "MissingName",
     "InvalidCast",
     "EnvConfig",
+    "DotFile",
     "AlreadySet",
     "enums",
     "boolean_cast",
