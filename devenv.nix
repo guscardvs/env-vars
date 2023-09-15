@@ -2,10 +2,9 @@
 
 {
   # https://devenv.sh/basics/
-  env.GREET = "devenv";
 
   # https://devenv.sh/packages/
-  packages = with pkgs; [ git python39 poetry ];
+  packages = with pkgs; [ git python39 poetry commitizen ];
 
   languages.python = {
       enable = true;
@@ -16,13 +15,7 @@
           install = {enable = true; allExtras = true;};
       };
   };
-  # https://devenv.sh/scripts/
-  scripts.hello.exec = "echo hello from $GREET";
 
-  enterShell = ''
-    hello
-    git --version
-  '';
 
   # https://devenv.sh/languages/
   # languages.nix.enable = true;

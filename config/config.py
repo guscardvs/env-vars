@@ -13,7 +13,8 @@ from typing import (
 
 from gyver.attrs import define, info
 
-from config._helpers import clean_dotenv_value, lazyfield, panic
+from config._helpers import clean_dotenv_value, panic
+from lazyfields import lazyfield
 from config.exceptions import InvalidCast, InvalidEnv, MissingName
 from config.interface import MISSING, _default_cast
 

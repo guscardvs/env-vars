@@ -1,10 +1,10 @@
 import os
 from pathlib import Path
-from typing import Any, Callable, Sequence, Union
+from typing import Any, Callable, Sequence, Union, Optional
 
 from gyver.attrs import call_init, define, info
 
-from config._helpers import lazyfield
+from lazyfields import lazyfield, force_set
 from config.config import Config, EnvMapping, default_mapping
 from config.enums import Env
 from config.interface import MISSING
@@ -82,9 +82,7 @@ class EnvConfig(Config):
 
     def __post_init__(self):
         if self.dotfile:
-            EnvConfig.file_values.manual_set(
-                self, dict(self._read_file(self.dotfile.filename))
-            )
+            force_set(self, "file_values", dict(self._read_file(self.dotfile.filename)))
 
     @lazyfield
     def env(self):
@@ -127,7 +125,7 @@ class EnvConfig(Config):
         return Config.get(self, name, cast, default)
 
     @lazyfield
-    def dotfile(self):
+    def dotfile(self) -> Optional[DotFile]:
         """
         Get the applicable dotfile for the current environment.
 
@@ -138,8 +136,8 @@ class EnvConfig(Config):
         for dot in sorted(self.dotfiles, reverse=True):
             if not dot.is_higher(self.env):
                 break
-            if dot.env != self.env and (
-                not dot.apply_to_lower or not dot.is_higher(self.env)
+            if dot.env is not self.env and not (
+                dot.apply_to_lower and dot.is_higher(self.env)
             ):
                 continue
             if not os.path.isfile(dot.filename):
