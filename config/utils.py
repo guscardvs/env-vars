@@ -215,7 +215,7 @@ def literal_cast(literal_decl: Any):
     def _cast(val: str) -> Any:
         for arg, cast in arg_map:
             if cast(val) == arg:
-                return val
+                return arg
         else:
             raise InvalidCast(
                 "Value received does not match any argument from literal",
