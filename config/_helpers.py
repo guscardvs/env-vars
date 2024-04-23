@@ -1,12 +1,10 @@
 import contextlib
 import typing
 
-from typing_extensions import ParamSpec, Self
-
 from config.exceptions import StrictCast
 
 T = typing.TypeVar("T")
-P = ParamSpec("P")
+P = typing.ParamSpec("P")
 
 ExcT = typing.TypeVar("ExcT", bound=Exception)
 
@@ -22,9 +20,7 @@ def clean_dotenv_value(value: str) -> str:
     value = value.strip()
 
     # Check if value has quotes at the beginning and end
-    has_quotes = (
-        len(value) >= 2 and value[0] == value[-1] and value[0] in ['"', "'"]
-    )
+    has_quotes = len(value) >= 2 and value[0] == value[-1] and value[0] in ['"', "'"]
 
     # Remove quotes if they exist (only once)
     if has_quotes:
@@ -47,13 +43,9 @@ class maybe_result(typing.Generic[P, T]):
             return result
         raise panic(StrictCast, f"received falsy value {result}", result)
 
-    def __call__(
-        self, *args: P.args, **kwargs: P.kwargs
-    ) -> typing.Optional[T]:
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> typing.Optional[T]:
         return self._func(*args, **kwargs)
 
-    def optional(
-        self, *args: P.args, **kwargs: P.kwargs
-    ) -> typing.Optional[T]:
+    def optional(self, *args: P.args, **kwargs: P.kwargs) -> typing.Optional[T]:
         with contextlib.suppress(Exception):
             return self._func(*args, **kwargs)

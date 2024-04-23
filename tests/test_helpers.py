@@ -1,8 +1,11 @@
 from pathlib import Path
+from typing import Literal
+
 import pytest
 
 import config
 from config.exceptions import InvalidCast, InvalidEnv
+from config.utils import literal_cast
 
 
 def test_comma_separated_returns_valid_split():
@@ -24,14 +27,14 @@ def test_comma_separated_returns_valid_split_with_cast():
 
 def test_boolean_returns_valid_bool():
     mapping = config.EnvMapping(
-        {"first": "true", "second": "False", "third": "1", "forth": "0"}
+        {"first": "true", "second": "False", "third": "1", "fourth": "0"}
     )
     cfg = config.Config(mapping=mapping)
 
     assert cfg("first", config.boolean_cast)
     assert not cfg("second", config.boolean_cast)
     assert cfg("third", config.boolean_cast)
-    assert not cfg("forth", config.boolean_cast)
+    assert not cfg("fourth", config.boolean_cast)
 
 
 def test_boolean_raises_invalid_cast():
@@ -89,7 +92,8 @@ def test_with_rule_valid_rule():
     cfg = config.Config(mapping=mapping)
 
     # Rule: Value must be greater than 40
-    greater_than_40 = lambda x: int(x) > 40
+    def greater_than_40(x):
+        return int(x) > 40
 
     # Valid rule check (value is greater than 40)
     cfg("key", config.with_rule(greater_than_40))
@@ -102,7 +106,8 @@ def test_with_rule_invalid_rule():
     cfg = config.Config(mapping=mapping)
 
     # Rule: Value must be less than 40
-    less_than_40 = lambda x: int(x) < 40
+    def less_than_40(x):
+        return int(x) < 40
 
     # Invalid rule check (value is not less than 40)
     with pytest.raises(InvalidCast) as exc_info:
@@ -113,4 +118,23 @@ def test_with_rule_invalid_rule():
         f"Value 42 did not pass rule check {less_than_40.__name__}",
         less_than_40,
         "42",
+    )
+
+
+def test_literal_cast_returns_valid_cast():
+    literal_type = Literal["other", "another"]
+    caster = literal_cast(literal_type)
+    mapping = config.EnvMapping(
+        {"first": "other", "second": "another", "third": "invalid"}
+    )
+    cfg = config.Config(mapping=mapping)
+
+    assert (cfg("first", caster), cfg("second", caster)) == ("other", "another")
+
+    with pytest.raises(InvalidCast) as exc_info:
+        cfg("third", caster)
+
+    assert exc_info.value.__cause__.args == (  # type: ignore
+        "Value received does not match any argument from literal",
+        literal_type.__args__,  # type: ignore
     )

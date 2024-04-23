@@ -12,10 +12,10 @@ from typing import (
 )
 
 from gyver.attrs import define, info
+from lazyfields import lazyfield
 
 from config._helpers import clean_dotenv_value, panic
-from lazyfields import lazyfield
-from config.exceptions import InvalidCast, InvalidEnv, MissingName
+from config.exceptions import InvalidCast, MissingName
 from config.interface import MISSING, _default_cast
 
 T = TypeVar("T")
@@ -59,9 +59,7 @@ class EnvMapping(MutableMapping[str, str]):
             KeyError: If the environment variable has already been read.
         """
         if name in self.already_read:
-            raise panic(
-                KeyError, f"{name} already read, cannot change its value"
-            )
+            raise panic(KeyError, f"{name} already read, cannot change its value")
         self.mapping[name] = value
 
     def __delitem__(self, name: str) -> None:
@@ -140,9 +138,7 @@ class Config:
         """
         with open(env_file, "r") as buf:
             for line in buf:
-                line = (
-                    line.strip()
-                )  # Remove leading/trailing whitespaces and newlines
+                line = line.strip()  # Remove leading/trailing whitespaces and newlines
                 if not line or line.startswith(
                     "#"
                 ):  # Skip empty lines and full-line comments
@@ -181,9 +177,7 @@ class Config:
         try:
             val = cast(val)
         except Exception as e:
-            raise panic(
-                InvalidCast, f"{name} received an invalid value {val}"
-            ) from e
+            raise panic(InvalidCast, f"{name} received an invalid value {val}") from e
         else:
             return val
 
@@ -230,9 +224,7 @@ class Config:
         """
         val = self._get_val(name, default)
         if val is MISSING:
-            raise panic(
-                MissingName, f"{name} not found and no default was given"
-            )
+            raise panic(MissingName, f"{name} not found and no default was given")
         return self._cast(name, val, cast)
 
     @overload
@@ -241,8 +233,7 @@ class Config:
         name: str,
         cast: Union[Callable[[Any], T], type[T]] = _default_cast,
         default: type[MISSING] = MISSING,
-    ) -> T:
-        ...
+    ) -> T: ...
 
     @overload
     def __call__(
@@ -250,8 +241,7 @@ class Config:
         name: str,
         cast: Union[Callable[[Any], T], type[T]] = _default_cast,
         default: T = ...,
-    ) -> T:
-        ...
+    ) -> T: ...
 
     def __call__(
         self,

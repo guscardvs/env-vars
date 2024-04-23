@@ -1,9 +1,5 @@
-from contextlib import contextmanager
-import typing
-import copy
+from typing import Literal
 
-@contextmanager
-def reset_mapping(mapping: typing.MutableMapping):
-    copied = copy.deepcopy(mapping)
-    yield mapping
-    mapping.update(copied)
+from config.utils import literal_cast
+
+literal_cast(Literal["asyncio", "sync"])("sync")

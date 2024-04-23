@@ -1,9 +1,10 @@
+from collections.abc import Callable
 from pathlib import Path
 from shlex import shlex
-from typing import Any, Callable, Generic, TypeVar, Union, overload
+from typing import Any, Generic, Literal, NamedTuple, TypeVar, Union, overload
 
 from config._helpers import maybe_result
-from config.exceptions import InvalidEnv
+from config.exceptions import InvalidCast, InvalidEnv
 
 
 @maybe_result
@@ -35,20 +36,16 @@ T = TypeVar("T")
 
 @overload
 def comma_separated(
-    cast: Callable[[str], str] = str
-) -> Callable[[str], tuple[str, ...]]:
-    ...
+    cast: Callable[[str], str] = str,
+) -> Callable[[str], tuple[str, ...]]: ...
 
 
 @overload
-def comma_separated(
-    cast: Callable[[str], T]
-) -> Callable[[str], tuple[T, ...]]:
-    ...
+def comma_separated(cast: Callable[[str], T]) -> Callable[[str], tuple[T, ...]]: ...
 
 
 def comma_separated(
-    cast: Callable[[str], Union[T, str]] = str
+    cast: Callable[[str], Union[T, str]] = str,
 ) -> Callable[[str], tuple[Union[T, str], ...]]:
     """
     Converts a comma-separated string to a tuple of values after applying the given cast function.
@@ -102,6 +99,7 @@ class _JoinedCast(Generic[S, T]):
     """
     A utility class for chaining casting operations.
     """
+
     def __init__(self, cast: Callable[[S], T]) -> None:
         self._cast = cast
 
@@ -130,6 +128,7 @@ class _JoinedCast(Generic[S, T]):
         Returns:
             Callable: A new casting function that combines the existing casting function and the provided one.
         """
+
         def _wrapper(val: Any):
             return cast(self._cast(val))
 
@@ -173,3 +172,54 @@ def with_rule(rule: Callable[[Any], bool]):
         return val
 
     return caster
+
+
+LiteralType = type(Literal["Any"])
+
+
+class ArgTuple(NamedTuple):
+    arg: str
+    cast: type
+
+
+def literal_cast(literal_decl: Any):
+    """
+    Converts a value to one of the literals defined in the provided literal declaration.
+
+    Args:
+        literal_decl (Any): The literal declaration, typically a `Literal` type annotation.
+
+    Returns:
+        Callable[[str], Any]: A casting function that checks if the value matches any of the literals defined
+            in the declaration. If a match is found, it returns the value as is. Otherwise, it raises an `InvalidCast`
+            exception.
+
+    Raises:
+        TypeError: If the provided literal declaration is not an instance of `Literal`.
+        InvalidCast: If the value received does not match any argument from the literal declaration.
+
+    Examples:
+        >>> literal_cast(Literal["Any"])("Any")
+        'Any'
+        >>> literal_cast(Literal[1, "two", 3.0])("3.0")
+        3.0
+        >>> literal_cast(Literal[1, "two", 3.0])("four")
+        Traceback (most recent call last):
+            ...
+        InvalidCast: Value received does not match any argument from literal: (1, 'two', 3.0)
+    """
+    if not isinstance(literal_decl, LiteralType):
+        raise TypeError
+    arg_map = tuple(ArgTuple(arg, type(arg)) for arg in literal_decl.__args__)
+
+    def _cast(val: str) -> Any:
+        for arg, cast in arg_map:
+            if cast(val) == arg:
+                return val
+        else:
+            raise InvalidCast(
+                "Value received does not match any argument from literal",
+                literal_decl.__args__,
+            )
+
+    return _cast
