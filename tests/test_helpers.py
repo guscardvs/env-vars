@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 from typing import Literal
 
@@ -122,17 +123,42 @@ def test_with_rule_invalid_rule():
 
 
 def test_literal_cast_returns_valid_cast():
-    literal_type = Literal["other", "another"]
+    class Test(Enum):
+        VALUE = "value"
+
+    literal_type = Literal[1, "other", b"another", Test.VALUE, None, False]
     caster = literal_cast(literal_type)
     mapping = config.EnvMapping(
-        {"first": "other", "second": "another", "third": "invalid"}
+        {
+            "first": "other",
+            "second": "another",
+            "third": "1",
+            "fourth": "value",
+            "fifth": "null",
+            "sixth": "false",
+            "seventh": "invalid",
+        }
     )
     cfg = config.Config(mapping=mapping)
 
-    assert (cfg("first", caster), cfg("second", caster)) == ("other", "another")
+    assert (
+        cfg("first", caster),
+        cfg("second", caster),
+        cfg("third", caster),
+        cfg("fourth", caster),
+        cfg("fifth", caster),
+        cfg("sixth", caster),
+    ) == (
+        "other",
+        b"another",
+        1,
+        Test.VALUE,
+        None,
+        False,
+    )
 
     with pytest.raises(InvalidCast) as exc_info:
-        cfg("third", caster)
+        cfg("seventh", caster)
 
     assert exc_info.value.__cause__.args == (  # type: ignore
         "Value received does not match any argument from literal",

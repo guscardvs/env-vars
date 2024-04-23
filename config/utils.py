@@ -1,6 +1,8 @@
 from collections.abc import Callable
+from enum import Enum
 from pathlib import Path
 from shlex import shlex
+from types import NoneType
 from typing import Any, Generic, Literal, NamedTuple, TypeVar, Union, overload
 
 from config._helpers import maybe_result
@@ -182,9 +184,30 @@ class ArgTuple(NamedTuple):
     cast: type
 
 
-def _try_cast(cast: Callable[[str], T], val: str) -> T | str:
+def null_cast(val: str):
+    if val.casefold() not in ("null", "none", ""):
+        raise InvalidCast("Null values should match ('null', 'none', '')")
+    return None
+
+
+_cast_map: dict[Callable, Callable[[str], Any]] = {
+    str: str,
+    bool: boolean_cast.strict,
+    int: int,
+    bytes: str.encode,
+    NoneType: null_cast,
+}
+
+
+def _try_cast(cast: type, val: str) -> Any:
+    caster = _cast_map.get(cast)
+    if caster is None:
+        if issubclass(cast, Enum):
+            caster = cast
+        else:
+            raise InvalidCast("Unknown type used for Literal")
     try:
-        return cast(val)
+        return caster(val)
     except Exception:
         return val
 
