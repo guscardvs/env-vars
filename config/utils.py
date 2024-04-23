@@ -182,6 +182,13 @@ class ArgTuple(NamedTuple):
     cast: type
 
 
+def _try_cast(cast: Callable[[str], T], val: str) -> T | str:
+    try:
+        return cast(val)
+    except Exception:
+        return val
+
+
 def literal_cast(literal_decl: Any):
     """
     Converts a value to one of the literals defined in the provided literal declaration.
@@ -214,7 +221,7 @@ def literal_cast(literal_decl: Any):
 
     def _cast(val: str) -> Any:
         for arg, cast in arg_map:
-            if cast(val) == arg:
+            if _try_cast(cast, val) == arg:
                 return arg
         else:
             raise InvalidCast(
