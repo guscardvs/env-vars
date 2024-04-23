@@ -7,7 +7,7 @@ line_length = 79
 
 [tool.poetry]
 name = "env-star"
-version = "2.4.3"
+version = "2.4.4"
 description = "a minimalist config manager"
 authors = ["Gustavo Correa <self.gustavocardoso@gmail.com>"]
 readme = "README.md"
