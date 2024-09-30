@@ -14,9 +14,7 @@ def test_envconfig_returns_file_vals_if_in_expected_env():
     """EnvConfig should consider file_vals
     if env matches consider_file_on_env"""
     environ = EnvMapping({"CONFIG_ENV": Env.LOCAL.val})
-    config = EnvConfig(
-        DotFile(PARENT_DIR / ".envconfig", Env.LOCAL), mapping=environ
-    )
+    config = EnvConfig(DotFile(PARENT_DIR / ".envconfig", Env.LOCAL), mapping=environ)
 
     assert config.env is Env.LOCAL
     assert config("NAME") == "teste"
@@ -24,9 +22,7 @@ def test_envconfig_returns_file_vals_if_in_expected_env():
 
 def test_envconfig_does_not_find_value_if_not_in_expected_env():
     environ = EnvMapping({"CONFIG_ENV": Env.DEV.val})
-    config = EnvConfig(
-        DotFile(PARENT_DIR / ".envconfig", Env.LOCAL), mapping=environ
-    )
+    config = EnvConfig(DotFile(PARENT_DIR / ".envconfig", Env.LOCAL), mapping=environ)
 
     with pytest.raises(MissingName):
         config("NAME")

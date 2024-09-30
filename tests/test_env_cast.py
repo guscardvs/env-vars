@@ -1,12 +1,10 @@
 from config import EnvConfig, DotFile, Env, EnvMapping
-import pytest
 
 
 def test_env_cast_default():
     environ = EnvMapping({"MY_ENV_VAR": Env.LOCAL.val})
     dotfile = DotFile(filename="mydotfile", env=Env.TEST)
     config = EnvConfig(dotfile, env_var="MY_ENV_VAR", mapping=environ)
-
 
     # Define your test cases for the default env_cast
     test_cases = [
@@ -29,11 +27,11 @@ def test_env_cast_custom_handler():
             return Env.DEV
         return Env.PRD  # Default if custom value not recognized
 
-
     environ = EnvMapping({"MY_ENV_VAR": Env.LOCAL.val})
     dotfile = DotFile(filename="mydotfile", env=Env.TEST)
-    config = EnvConfig(dotfile, env_var="MY_ENV_VAR", mapping=environ, env_cast=custom_env_cast)
-    
+    config = EnvConfig(
+        dotfile, env_var="MY_ENV_VAR", mapping=environ, env_cast=custom_env_cast
+    )
 
     # Define your test cases for the custom env_cast
     test_cases = [

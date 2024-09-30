@@ -1,5 +1,6 @@
 import contextlib
 import typing
+from collections.abc import Callable
 
 from config.exceptions import StrictCast
 
@@ -34,7 +35,7 @@ class maybe_result(typing.Generic[P, T]):
 
     def __init__(
         self,
-        func: typing.Callable[P, typing.Optional[T]],
+        func: Callable[P, T | None],
     ):
         self._func = func
 
@@ -43,9 +44,9 @@ class maybe_result(typing.Generic[P, T]):
             return result
         raise panic(StrictCast, f"received falsy value {result}", result)
 
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> typing.Optional[T]:
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T | None:
         return self._func(*args, **kwargs)
 
-    def optional(self, *args: P.args, **kwargs: P.kwargs) -> typing.Optional[T]:
+    def optional(self, *args: P.args, **kwargs: P.kwargs) -> T | None:
         with contextlib.suppress(Exception):
             return self._func(*args, **kwargs)

@@ -1,10 +1,11 @@
 import os
 from pathlib import Path
-from typing import Any, Callable, Sequence, Union, Optional
+from typing import Any
+from collections.abc import Callable, Sequence
 
 from gyver.attrs import call_init, define, info
+from lazyfields import force_set, lazyfield
 
-from lazyfields import lazyfield, force_set
 from config.config import Config, EnvMapping, default_mapping
 from config.enums import Env
 from config.interface import MISSING
@@ -21,7 +22,7 @@ class DotFile:
         apply_to_lower (bool): Indicates whether the dotfile should be applied to lower-priority environments.
     """
 
-    filename: Union[str, Path] = info(order=False)
+    filename: str | Path = info(order=False)
     env: Env = info(order=lambda env: env.weight)
     apply_to_lower: bool = info(default=False, order=False)
 
@@ -47,6 +48,7 @@ class EnvConfig(Config):
     """
     Extended configuration class that supports environment-specific configurations.
     """
+
     mapping: EnvMapping = default_mapping
     env_var: str = "CONFIG_ENV"
     env_cast: Callable[[str], Env] = Env.new
@@ -108,7 +110,7 @@ class EnvConfig(Config):
         self,
         name: str,
         cast: Callable[..., Any] = ...,
-        default: Union[Any, type[MISSING]] = ...,
+        default: Any | type[MISSING] = ...,
     ) -> Any:
         """
         Get a configuration value, with the option to cast and provide a default value.
@@ -125,7 +127,7 @@ class EnvConfig(Config):
         return Config.get(self, name, cast, default)
 
     @lazyfield
-    def dotfile(self) -> Optional[DotFile]:
+    def dotfile(self) -> DotFile | None:
         """
         Get the applicable dotfile for the current environment.
 

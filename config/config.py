@@ -3,13 +3,10 @@ from os import environ
 from pathlib import Path
 from typing import (
     Any,
-    Callable,
-    Iterator,
-    MutableMapping,
     TypeVar,
-    Union,
     overload,
 )
+from collections.abc import Callable, Iterator, MutableMapping
 
 from gyver.attrs import define, info
 from lazyfields import lazyfield
@@ -104,7 +101,7 @@ class Config:
     Configuration settings for working with environment variables.
     """
 
-    env_file: Union[str, Path, None] = None
+    env_file: str | Path | None = None
     mapping: EnvMapping = default_mapping
 
     def __post_init__(self):
@@ -126,7 +123,7 @@ class Config:
         """
         return {}
 
-    def _read_file(self, env_file: Union[str, Path]):
+    def _read_file(self, env_file: str | Path):
         """
         Read values from the environment file.
 
@@ -136,7 +133,7 @@ class Config:
         Yields:
             tuple[str, str]: Pairs of environment variable names and their values.
         """
-        with open(env_file, "r") as buf:
+        with open(env_file) as buf:
             for line in buf:
                 line = line.strip()  # Remove leading/trailing whitespaces and newlines
                 if not line or line.startswith(
@@ -182,8 +179,8 @@ class Config:
             return val
 
     def _get_val(
-        self, name: str, default: Union[Any, type[MISSING]] = MISSING
-    ) -> Union[Any, type[MISSING]]:
+        self, name: str, default: Any | type[MISSING] = MISSING
+    ) -> Any | type[MISSING]:
         """
         Get the value of the specified environment variable.
 
@@ -204,7 +201,7 @@ class Config:
         self,
         name: str,
         cast: Callable = _default_cast,
-        default: Union[Any, type[MISSING]] = MISSING,
+        default: Any | type[MISSING] = MISSING,
     ) -> Any:
         """
         Get the value of the specified environment variable, optionally casting it.
@@ -231,7 +228,7 @@ class Config:
     def __call__(
         self,
         name: str,
-        cast: Union[Callable[[Any], T], type[T]] = _default_cast,
+        cast: Callable[[Any], T] | type[T] = _default_cast,
         default: type[MISSING] = MISSING,
     ) -> T: ...
 
@@ -239,15 +236,15 @@ class Config:
     def __call__(
         self,
         name: str,
-        cast: Union[Callable[[Any], T], type[T]] = _default_cast,
+        cast: Callable[[Any], T] | type[T] = _default_cast,
         default: T = ...,
     ) -> T: ...
 
     def __call__(
         self,
         name: str,
-        cast: Union[Callable[[Any], T], type[T]] = _default_cast,
-        default: Union[T, type[MISSING]] = MISSING,
+        cast: Callable[[Any], T] | type[T] = _default_cast,
+        default: T | type[MISSING] = MISSING,
     ) -> T:
         """
         Get the value of the specified environment variable, optionally casting it using the callable syntax.

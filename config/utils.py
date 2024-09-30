@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 from shlex import shlex
 from types import NoneType
-from typing import Any, Generic, Literal, NamedTuple, TypeVar, Union, overload
+from typing import Any, Generic, Literal, NamedTuple, TypeVar, overload
 
 from config._helpers import maybe_result
 from config.exceptions import InvalidCast, InvalidEnv
@@ -47,8 +47,8 @@ def comma_separated(cast: Callable[[str], T]) -> Callable[[str], tuple[T, ...]]:
 
 
 def comma_separated(
-    cast: Callable[[str], Union[T, str]] = str,
-) -> Callable[[str], tuple[Union[T, str], ...]]:
+    cast: Callable[[str], T | str] = str,
+) -> Callable[[str], tuple[T | str, ...]]:
     """
     Converts a comma-separated string to a tuple of values after applying the given cast function.
 
@@ -61,7 +61,7 @@ def comma_separated(
             from the comma-separated string.
     """
 
-    def _wrapped(val: str) -> tuple[Union[T, str], ...]:
+    def _wrapped(val: str) -> tuple[T | str, ...]:
         lex = shlex(val, posix=True)
         lex.whitespace = ","
         lex.whitespace_split = True

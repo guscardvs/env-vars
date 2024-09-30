@@ -3,6 +3,7 @@ class ConfigError(Exception):
     Base exception class for all configuration-related errors.
     """
 
+
 class InvalidCast(ConfigError):
     """
     Exception raised when the configuration cast callable raises an error.
@@ -10,6 +11,7 @@ class InvalidCast(ConfigError):
     This exception is raised when the casting function provided to the configuration
     is unable to successfully cast a value.
     """
+
 
 class MissingName(ConfigError, KeyError):
     """
@@ -19,6 +21,7 @@ class MissingName(ConfigError, KeyError):
     but the name is not found in the configuration environment.
     """
 
+
 class AlreadySet(ConfigError):
     """
     Exception raised when attempting to set a value that is already set.
@@ -27,6 +30,7 @@ class AlreadySet(ConfigError):
     has already been set previously.
     """
 
+
 class StrictCast(InvalidCast):
     """
     Exception raised when a strict cast is used for casting a configuration value.
@@ -34,6 +38,7 @@ class StrictCast(InvalidCast):
     This exception is raised when a strict cast is used for casting a value, and
     the cast operation encounters an error.
     """
+
 
 class InvalidEnv(ConfigError):
     """

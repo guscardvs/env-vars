@@ -35,16 +35,18 @@ hypothesis = "^6.81.2"
 
 
 [tool.poetry.group.lint.dependencies]
-flake8 = "^6.0.0"
-black = "^23.7.0"
-isort = "^5.12.0"
-autoflake = "^2.2.0"
 docformatter = "^1.7.5"
+ruff = "^0.6.8"
 
 
 [tool.poetry.group.test.dependencies]
 pytest-cov = "^4.1.0"
 coverage = "^7.2.7"
+
+[tool.ruff]
+target-version = "py310"
+[tool.ruff.lint]
+extend-select = ["UP"]
 
 [tool.pytest.ini_options]
 addopts = [

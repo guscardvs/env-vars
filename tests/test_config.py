@@ -1,5 +1,4 @@
 from pathlib import Path
-import tempfile
 import pytest
 from hypothesis import given
 from hypothesis.strategies import text

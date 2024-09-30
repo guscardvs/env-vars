@@ -1,4 +1,5 @@
-from typing import Any, Callable, Protocol, TypeVar, Union, overload
+from typing import Any, Protocol, TypeVar, overload
+from collections.abc import Callable
 
 
 class MISSING:
@@ -17,32 +18,28 @@ class ConfigLike(Protocol):
         self,
         name: str,
         cast: Callable = _default_cast,
-        default: Union[Any, type[MISSING]] = MISSING,
-    ) -> Any:
-        ...
+        default: Any | type[MISSING] = MISSING,
+    ) -> Any: ...
 
     @overload
     def __call__(
         self,
         name: str,
-        cast: Union[Callable[[Any], T], type[T]] = _default_cast,
+        cast: Callable[[Any], T] | type[T] = _default_cast,
         default: type[MISSING] = MISSING,
-    ) -> T:
-        ...
+    ) -> T: ...
 
     @overload
     def __call__(
         self,
         name: str,
-        cast: Union[Callable[[Any], T], type[T]] = _default_cast,
+        cast: Callable[[Any], T] | type[T] = _default_cast,
         default: T = ...,
-    ) -> T:
-        ...
+    ) -> T: ...
 
     def __call__(
         self,
         name: str,
-        cast: Union[Callable[[Any], T], type[T]] = _default_cast,
-        default: Union[T, type[MISSING]] = MISSING,
-    ) -> T:
-        ...
+        cast: Callable[[Any], T] | type[T] = _default_cast,
+        default: T | type[MISSING] = MISSING,
+    ) -> T: ...
