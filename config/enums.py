@@ -1,7 +1,5 @@
 from enum import Enum
-from typing import NamedTuple
-
-from typing_extensions import Self
+from typing import Any, NamedTuple
 
 
 class EnvTuple(NamedTuple):
@@ -29,11 +27,12 @@ class Env(EnvTuple, Enum):
         PRD (Env): The production environment.
     """
 
-    LOCAL = EnvTuple("local", 1)
-    TEST = EnvTuple("test", 2)
-    DEV = EnvTuple("dev", 3)
-    QA = EnvTuple("qa", 4)
-    PRD = EnvTuple("prd", 5)
+    LOCAL = "local", 1
+    TEST = "test", 2
+    DEV = "dev", 3
+    QA = "qa", 4
+    PRD = "prd", 5
+    ALWAYS = "always", 99
 
     @property
     def value(self) -> EnvTuple:
@@ -46,7 +45,7 @@ class Env(EnvTuple, Enum):
         return super().value
 
     @property
-    def val(self):
+    def name(self):
         """
         Get the environment value.
 
@@ -56,7 +55,7 @@ class Env(EnvTuple, Enum):
         return self.value.val
 
     @property
-    def weight(self):
+    def ordering(self):
         """
         Get the weight associated with the environment.
 
@@ -66,7 +65,7 @@ class Env(EnvTuple, Enum):
         return self.value.weight
 
     @classmethod
-    def new(cls, val: str) -> Self:
+    def _missing_(cls, value: object) -> Any:
         """
         Create a new instance of the Env enum based on the given environment value.
 
@@ -80,6 +79,6 @@ class Env(EnvTuple, Enum):
             ValueError: If the provided value is not a valid environment value.
         """
         try:
-            return next(value for value in cls if value.val == val)
+            return next(item for item in cls if item.name == value)
         except StopIteration:
-            raise ValueError(f"{val!r} is not a valid {cls.__name__}") from None
+            raise ValueError(f"{value!r} is not a valid {cls.__name__}") from None

@@ -5,8 +5,8 @@ from typing import Literal
 import pytest
 
 import config
-from config.exceptions import InvalidCast, InvalidEnv
-from config.utils import literal_cast
+from config.exceptions import InvalidCast, InvalidEnv, MissingName
+from config.utils import boolean_cast, literal_cast, multicast, none_is_missing
 
 
 def test_comma_separated_returns_valid_split():
@@ -164,3 +164,30 @@ def test_literal_cast_returns_valid_cast():
         "Value received does not match any argument from literal",
         literal_type.__args__,  # type: ignore
     )
+
+
+def test_none_is_missing():
+    mapping = config.EnvMapping({"key": "null"})
+    cfg = config.Config(mapping=mapping)
+
+    with pytest.raises(MissingName):
+        cfg("key", none_is_missing(boolean_cast.optional))
+
+
+def test_multicast():
+    def surely_fails(val):
+        raise ValueError("This function does not work")
+
+    def returns_anything(val):
+        return "anything"
+
+    mapping = config.EnvMapping({"key": "42"})
+    cfg = config.Config(mapping=mapping)
+
+    assert cfg("key", multicast(int, surely_fails)) == 42
+
+    with pytest.raises(InvalidCast) as exc_info:
+        cfg("key", multicast(boolean_cast.strict, surely_fails))
+    assert exc_info.value.__cause__.args == ("This function does not work",)
+
+    assert cfg("key", multicast(returns_anything, surely_fails)) == "anything"

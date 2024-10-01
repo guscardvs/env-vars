@@ -1,8 +1,8 @@
-from config import EnvConfig, DotFile, Env, EnvMapping
+from config import DotFile, Env, EnvConfig, EnvMapping
 
 
 def test_env_cast_default():
-    environ = EnvMapping({"MY_ENV_VAR": Env.LOCAL.val})
+    environ = EnvMapping({"MY_ENV_VAR": Env.LOCAL.name})
     dotfile = DotFile(filename="mydotfile", env=Env.TEST)
     config = EnvConfig(dotfile, env_var="MY_ENV_VAR", mapping=environ)
 
@@ -27,7 +27,7 @@ def test_env_cast_custom_handler():
             return Env.DEV
         return Env.PRD  # Default if custom value not recognized
 
-    environ = EnvMapping({"MY_ENV_VAR": Env.LOCAL.val})
+    environ = EnvMapping({"MY_ENV_VAR": Env.LOCAL.name})
     dotfile = DotFile(filename="mydotfile", env=Env.TEST)
     config = EnvConfig(
         dotfile, env_var="MY_ENV_VAR", mapping=environ, env_cast=custom_env_cast

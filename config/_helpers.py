@@ -50,3 +50,52 @@ class maybe_result(typing.Generic[P, T]):
     def optional(self, *args: P.args, **kwargs: P.kwargs) -> T | None:
         with contextlib.suppress(Exception):
             return self._func(*args, **kwargs)
+
+
+def closing_quote_position(value: str) -> int | None:
+    """Returns the position of the closing quote."""
+    quotes = ("'", '"')
+    if value[0] not in quotes:
+        # string does not start with a quote
+        return None
+    quote_char = value[0]
+    closing_quote = next(
+        (
+            position
+            for position, token in enumerate(value[1:], 1)
+            if token == quote_char and value[position - 1] != "\\"
+        ),
+        None,
+    )
+    return closing_quote
+
+
+def strip_comment(value: str, closing_quote: int | None = None) -> str:
+    """
+    Remove comments from the string. A comment starts with a '#'
+    character preceded by a space or a tab.
+
+    Args:
+        value (str): The input string which might contain a comment.
+        closing_quote (int | None): Position of the closing quote, if any.
+    Returns:
+        str: The string without the comment.
+    """
+
+    if "#" not in value:
+        return value
+    closing_quote = closing_quote or 0
+    if closing_quote == len(value) - 1:
+        # String is fully quoted
+        return value
+    comment_starts = next(
+        (
+            position
+            for position, token in enumerate(value[closing_quote:], closing_quote)
+            if token == "#" and position != 0 and value[position - 1] in (" ", "\t")
+        ),
+        None,
+    )
+    if comment_starts is None:
+        return value
+    return value[:comment_starts].rstrip()

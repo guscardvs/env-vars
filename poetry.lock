@@ -222,13 +222,13 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "gyver-attrs"
-version = "0.9.0"
+version = "0.9.4"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "gyver_attrs-0.9.0-py3-none-any.whl", hash = "sha256:cc2948962ec7621f068580e937ac2145839bf2bad138129e992522a75bf7696c"},
-    {file = "gyver_attrs-0.9.0.tar.gz", hash = "sha256:f0c268b880dbd42bba1fbe058ba351450b7db3a353db3ddb7317e1b56e100da0"},
+    {file = "gyver_attrs-0.9.4-py3-none-any.whl", hash = "sha256:47a1a7c4fb39c9394de47d4086d852237603ef71e9e3753aac8c9da34f32f1e4"},
+    {file = "gyver_attrs-0.9.4.tar.gz", hash = "sha256:160fa3dcc59cdeac11096681892d6ee1dffc22cf5c231ca7d148e06fdc513ca7"},
 ]
 
 [package.dependencies]
@@ -551,4 +551,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "c241c1144b8c191341ab788b0b0bed1e072e1ca262ff0ea1c4d727459a7664b8"
+content-hash = "d8ccb06f7fee50f1e9dd9f6908e253655b53aee820448c51b5d95acde6d4aefc"

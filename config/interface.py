@@ -1,12 +1,12 @@
-from typing import Any, Protocol, TypeVar, overload
 from collections.abc import Callable
+from typing import Any, Protocol, TypeVar, overload
 
 
 class MISSING:
     pass
 
 
-def _default_cast(a: Any):
+def default_cast(a: Any):
     return a
 
 
@@ -17,7 +17,7 @@ class ConfigLike(Protocol):
     def get(
         self,
         name: str,
-        cast: Callable = _default_cast,
+        cast: Callable = default_cast,
         default: Any | type[MISSING] = MISSING,
     ) -> Any: ...
 
@@ -25,7 +25,7 @@ class ConfigLike(Protocol):
     def __call__(
         self,
         name: str,
-        cast: Callable[[Any], T] | type[T] = _default_cast,
+        cast: Callable[[Any], T] | type[T] = default_cast,
         default: type[MISSING] = MISSING,
     ) -> T: ...
 
@@ -33,13 +33,13 @@ class ConfigLike(Protocol):
     def __call__(
         self,
         name: str,
-        cast: Callable[[Any], T] | type[T] = _default_cast,
+        cast: Callable[[Any], T] | type[T] = default_cast,
         default: T = ...,
     ) -> T: ...
 
     def __call__(
         self,
         name: str,
-        cast: Callable[[Any], T] | type[T] = _default_cast,
+        cast: Callable[[Any], T] | type[T] = default_cast,
         default: T | type[MISSING] = MISSING,
     ) -> T: ...

@@ -1,19 +1,24 @@
 import os
+from collections.abc import Callable, Iterator, MutableMapping
 from os import environ
 from pathlib import Path
 from typing import (
     Any,
+    TextIO,
     TypeVar,
     overload,
 )
-from collections.abc import Callable, Iterator, MutableMapping
 
-from gyver.attrs import define, info
-from lazyfields import lazyfield
+from gyver.attrs import define, info, private
 
-from config._helpers import clean_dotenv_value, panic
+from config._helpers import (
+    clean_dotenv_value,
+    closing_quote_position,
+    panic,
+    strip_comment,
+)
 from config.exceptions import InvalidCast, MissingName
-from config.interface import MISSING, _default_cast
+from config.interface import MISSING, default_cast
 
 T = TypeVar("T")
 
@@ -103,6 +108,7 @@ class Config:
 
     env_file: str | Path | None = None
     mapping: EnvMapping = default_mapping
+    file_values: dict[str, str] = private(initial_factory=dict)
 
     def __post_init__(self):
         """
@@ -111,19 +117,10 @@ class Config:
         Reads values from the environment file and updates the internal mapping if necessary.
         """
         if self.env_file and os.path.isfile(self.env_file):
-            self.file_values.update(dict(self._read_file(self.env_file)))
+            with open(self.env_file) as buffer:
+                self.file_values.update(dict(self._read_file(buffer)))
 
-    @lazyfield
-    def file_values(self):
-        """
-        Lazy field for storing values read from the environment file.
-
-        Returns:
-            dict: Dictionary containing values read from the environment file.
-        """
-        return {}
-
-    def _read_file(self, env_file: str | Path):
+    def _read_file(self, buf: TextIO):
         """
         Read values from the environment file.
 
@@ -133,28 +130,19 @@ class Config:
         Yields:
             tuple[str, str]: Pairs of environment variable names and their values.
         """
-        with open(env_file) as buf:
-            for line in buf:
-                line = line.strip()  # Remove leading/trailing whitespaces and newlines
-                if not line or line.startswith(
-                    "#"
-                ):  # Skip empty lines and full-line comments
-                    continue
+        for line in buf:
+            line = line.strip()  # Remove leading/trailing whitespaces and newlines
+            if not line or line.startswith(
+                "#"
+            ):  # Skip empty lines and full-line comments
+                continue
 
-                # Handle lines with comments after the value
+            # Handle lines with comments after the value
 
-                name, value = line.split("=", 1)
-                if " #" in value:
-                    value, comment = value.strip().split(" #", 1)
-                    maybe_quote = value[0]
-                    if (
-                        maybe_quote in "'\""
-                        and value[-1] != maybe_quote
-                        and comment[-1] == maybe_quote
-                    ):
-                        value = f"{value} #{comment}"
-
-                yield name.strip(), clean_dotenv_value(value)
+            name, value = line.split("=", 1)
+            quoted_until = closing_quote_position(value)
+            value = strip_comment(value, quoted_until)
+            yield name.strip(), clean_dotenv_value(value)
 
     def _cast(self, name: str, val: Any, cast: Callable) -> Any:
         """
@@ -173,6 +161,8 @@ class Config:
         """
         try:
             val = cast(val)
+        except MissingName:
+            raise
         except Exception as e:
             raise panic(InvalidCast, f"{name} received an invalid value {val}") from e
         else:
@@ -200,7 +190,7 @@ class Config:
     def get(
         self,
         name: str,
-        cast: Callable = _default_cast,
+        cast: Callable = default_cast,
         default: Any | type[MISSING] = MISSING,
     ) -> Any:
         """
@@ -228,7 +218,7 @@ class Config:
     def __call__(
         self,
         name: str,
-        cast: Callable[[Any], T] | type[T] = _default_cast,
+        cast: Callable[[Any], T] | type[T] = default_cast,
         default: type[MISSING] = MISSING,
     ) -> T: ...
 
@@ -236,14 +226,14 @@ class Config:
     def __call__(
         self,
         name: str,
-        cast: Callable[[Any], T] | type[T] = _default_cast,
+        cast: Callable[[Any], T] | type[T] = default_cast,
         default: T = ...,
     ) -> T: ...
 
     def __call__(
         self,
         name: str,
-        cast: Callable[[Any], T] | type[T] = _default_cast,
+        cast: Callable[[Any], T] | type[T] = default_cast,
         default: T | type[MISSING] = MISSING,
     ) -> T:
         """

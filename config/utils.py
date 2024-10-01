@@ -6,7 +6,7 @@ from types import NoneType
 from typing import Any, Generic, Literal, NamedTuple, TypeVar, overload
 
 from config._helpers import maybe_result
-from config.exceptions import InvalidCast, InvalidEnv
+from config.exceptions import InvalidCast, InvalidEnv, MissingName
 
 
 @maybe_result
@@ -184,7 +184,9 @@ class ArgTuple(NamedTuple):
     cast: type
 
 
-def null_cast(val: str):
+def null_cast(val: str | None):
+    if val is None:
+        return
     if val.casefold() not in ("null", "none", ""):
         raise InvalidCast("Null values should match ('null', 'none', '')")
     return None
@@ -251,5 +253,40 @@ def literal_cast(literal_decl: Any):
                 "Value received does not match any argument from literal",
                 literal_decl.__args__,
             )
+
+    return _cast
+
+
+def multicast(
+    often: Callable[[T], U], fallback: Callable[[T], S]
+) -> Callable[[T], U | S]:
+    def _cast(val: T) -> U | S:
+        try:
+            return often(val)
+        except InvalidCast as first:
+            try:
+                return fallback(val)
+            except InvalidCast as second:
+                raise InvalidCast(
+                    f"Value received failed both casts: {often!r} and {fallback!r}"
+                    f": {first!r} and {second!r}",
+                ) from second
+
+    return _cast
+
+
+def none_is_missing(cast: Callable[[T], U | None]) -> Callable[[T | None], U]:
+    exc_message = (
+        f"Expected value to be castable to {cast.__name__}, but returned None instead"
+    )
+    cast = multicast(cast, null_cast)  # type: ignore
+
+    def _cast(val: T | None) -> U:
+        if val is None:
+            raise MissingName(exc_message)
+        casted = cast(val)
+        if casted is None:
+            raise MissingName(exc_message)
+        return casted
 
     return _cast
