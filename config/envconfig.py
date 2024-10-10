@@ -172,7 +172,6 @@ class EnvConfig(Config):
             maybe_result(valid_path).optional,
             None,
         ):
-            print(dotfile_path)
             if dotfile_path.exists():
                 force_set(self, "env", Env.ALWAYS)
                 return DotFile(
