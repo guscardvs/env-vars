@@ -1,5 +1,6 @@
 from collections.abc import Callable
 from enum import Enum
+from functools import partial, wraps
 from pathlib import Path
 from shlex import shlex
 from types import NoneType
@@ -8,8 +9,30 @@ from typing import Any, Generic, Literal, NamedTuple, TypeVar, overload
 from config._helpers import maybe_result
 from config.exceptions import InvalidCast, InvalidEnv, MissingName
 
+Arg = TypeVar("Arg")
+T = TypeVar("T")
+U = TypeVar("U")
+
+
+def instance_is_casted(
+    expects: type[T], onmiss: Callable[[Arg], T | U]
+) -> Callable[[Arg | T], T | U]:
+    """
+    Returns a decorator that checks if the value is an instance of the given type.
+    If it is, it returns the value, otherwise it calls the given callable.
+    """
+
+    @wraps(onmiss)
+    def _check(value: Any) -> T | U:
+        if isinstance(value, expects):
+            return value
+        return onmiss(value)
+
+    return _check
+
 
 @maybe_result
+@partial(instance_is_casted, bool)
 def boolean_cast(string: str):
     """
     Converts a string to its boolean equivalent.
@@ -61,6 +84,7 @@ def comma_separated(
             from the comma-separated string.
     """
 
+    @partial(instance_is_casted, tuple)
     def _wrapped(val: str) -> tuple[T | str, ...]:
         lex = shlex(val, posix=True)
         lex.whitespace = ","
@@ -73,6 +97,7 @@ def comma_separated(
 T = TypeVar("T")
 
 
+@partial(instance_is_casted, Path)
 def valid_path(val: str) -> Path:
     """
     Converts a string to a Path object and checks if the path exists.
@@ -93,8 +118,6 @@ def valid_path(val: str) -> Path:
 
 
 S = TypeVar("S")
-T = TypeVar("T")
-U = TypeVar("U")
 
 
 class _JoinedCast(Generic[S, T]):
@@ -184,9 +207,8 @@ class ArgTuple(NamedTuple):
     cast: type
 
 
-def null_cast(val: str | None):
-    if val is None:
-        return
+@partial(instance_is_casted, NoneType)
+def null_cast(val: str):
     if val.casefold() not in ("null", "none", ""):
         raise InvalidCast("Null values should match ('null', 'none', '')")
     return None

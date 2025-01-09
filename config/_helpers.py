@@ -55,7 +55,7 @@ class maybe_result(typing.Generic[P, T]):
 def closing_quote_position(value: str) -> int | None:
     """Returns the position of the closing quote."""
     quotes = ("'", '"')
-    if value[0] not in quotes:
+    if not value or value[0] not in quotes:
         # string does not start with a quote
         return None
     quote_char = value[0]

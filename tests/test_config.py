@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import pytest
 from hypothesis import given
 from hypothesis.strategies import text
@@ -81,29 +82,31 @@ def test_config_reads_from_env_file(tmp_path: Path):
             map(
                 lambda val: f"{val}\n",
                 [
-                    "HELLO=world",
-                    "# EMAIL=error",
-                    "TEST='123abc'",
-                    'TESTB=" 321 "',
-                    "TESTC=\"'123'\"",
-                    "TESTD=abc # comment",
-                    "TESTE='abc #comment'",
-                    "TESTF=abc#comment",
-                    "TESTG='abc' #\"comment\"",
-                    "TESTH='abc #comment\"",
+                    "TEST_VALUE_FOUND=world",  # Testing a normal key-value pair
+                    "# FULLY_COMMENTED=error",  # Testing a comment (should be ignored)
+                    "TEST_QUOTE_CAPTURE='123abc'",  # Testing single quotes around value
+                    'TEST_QUOTE_CAPTURE_WITH_SPACES=" 321 "',  # Testing double quotes with spaces
+                    "TEST_DOUBLE_QUOTE_CAPTURE=\"'123'\"",  # Testing double quotes around value
+                    "TEST_COMMENT_IN_VALUE=abc # comment",  # Testing comment after value (should be ignored)
+                    "TEST_QUOTED_COMMENT_CAPTURE='abc #comment'",  # Testing single quotes with quoted comment
+                    "TEST_VALUE_WITH_HASH=abc#comment",  # Testing value with hash, comment should not be taken into consideration
+                    "TEST_QUOTE_WITH_COMMENT_CAPTURE='abc' #\"comment\"",  # Testing single quotes with inline comment
+                    "TEST_QUOTE_CAPTURE_WITH_MIXED_COMMENTS='abc #comment\"",  # Testing single quotes with mixed comment format
+                    "TEST_EMPTY_VALUE=",  # Testing empty value
                 ],
             )
         )
     cfg = config.Config(filename)
-    assert cfg("HELLO") == "world"
-    assert cfg("TEST") == "123abc"
-    assert cfg("TESTB") == " 321 "
-    assert cfg("TESTC") == "'123'"
-    assert cfg("TESTD") == "abc"
-    assert cfg("TESTE") == "abc #comment"
-    assert cfg("TESTF") == "abc#comment"
-    assert cfg("TESTG") == "abc"
-    assert cfg("TESTH") == "'abc"
+    assert cfg("TEST_VALUE_FOUND") == "world"
+    assert cfg("TEST_QUOTE_CAPTURE") == "123abc"
+    assert cfg("TEST_QUOTE_CAPTURE_WITH_SPACES") == " 321 "
+    assert cfg("TEST_DOUBLE_QUOTE_CAPTURE") == "'123'"
+    assert cfg("TEST_COMMENT_IN_VALUE") == "abc"
+    assert cfg("TEST_QUOTED_COMMENT_CAPTURE") == "abc #comment"
+    assert cfg("TEST_VALUE_WITH_HASH") == "abc#comment"
+    assert cfg("TEST_QUOTE_WITH_COMMENT_CAPTURE") == "abc"
+    assert cfg("TEST_QUOTE_CAPTURE_WITH_MIXED_COMMENTS") == "'abc"
+    assert cfg("TEST_EMPTY_VALUE") == ""
 
     with pytest.raises(MissingName):
-        cfg("EMAIL")
+        cfg("FULLY_COMMENTED")

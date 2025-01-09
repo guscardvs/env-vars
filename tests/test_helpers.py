@@ -6,7 +6,13 @@ import pytest
 
 import config
 from config.exceptions import InvalidCast, InvalidEnv, MissingName
-from config.utils import boolean_cast, literal_cast, multicast, none_is_missing
+from config.utils import (
+    boolean_cast,
+    instance_is_casted,
+    literal_cast,
+    multicast,
+    none_is_missing,
+)
 
 
 def test_comma_separated_returns_valid_split():
@@ -36,6 +42,8 @@ def test_boolean_returns_valid_bool():
     assert not cfg("second", config.boolean_cast)
     assert cfg("third", config.boolean_cast)
     assert not cfg("fourth", config.boolean_cast)
+    assert config.boolean_cast.strict(True) is True
+    assert config.boolean_cast.strict(False) is False
 
 
 def test_boolean_raises_invalid_cast():
@@ -82,10 +90,10 @@ def test_joined_cast_composes_cast_functions():
     cfg = config.Config(mapping=mapping)
 
     # Casting sequence: str -> int -> str -> float
-    val = cfg("key", config.joined_cast(str).cast(int).cast(str).cast(float))
+    val = cfg("key", config.joined_cast(int).cast(float).cast(str))
 
-    assert isinstance(val, float)
-    assert val == 42.0
+    assert isinstance(val, str)
+    assert val == "42.0"
 
 
 def test_with_rule_valid_rule():
@@ -191,3 +199,12 @@ def test_multicast():
     assert exc_info.value.__cause__.args == ("This function does not work",)
 
     assert cfg("key", multicast(returns_anything, surely_fails)) == "anything"
+
+
+def test_instance_is_casted():
+    missing = object()
+
+    caster = instance_is_casted(str, lambda _: missing)
+
+    assert caster("hello") == "hello"
+    assert caster(123) is missing
